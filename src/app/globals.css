@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-nuit-abysse: #0b0d1f;
+  --color-nuit-profond: #141833;
+  --color-nuit-encre: #1e2347;
+  --color-nuit-violet: #2a2040;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-lune-violet: #6b5b95;
+  --color-lune-lavande: #b8a9d9;
+  --color-lune-or: #d4af7a;
+  --color-lune-or-pale: #e8d5a8;
+  --color-lune-creme: #f5efe6;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-cycle-rose: #c89ca8;
+  --color-cycle-corail: #d4a5a5;
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
+
+  --tracking-ultra-wide: 0.25em;
+
+  --animate-twinkle: twinkle 3s ease-in-out infinite;
+  --animate-drift: drift 6s ease-in-out infinite;
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root {
+  --halo-lune: radial-gradient(ellipse at 50% 20%, #1e2347 0%, #0b0d1f 65%);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--halo-lune);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: #d4af7a;
+    color: #0b0d1f;
+  }
+}
+
+@utility bg-halo-lune {
+  background: var(--halo-lune);
+}
+
+@utility card-nocturne {
+  background: rgba(30, 35, 71, 0.55);
+  border: 0.5px solid rgba(184, 169, 217, 0.15);
+}
+
+@utility card-or {
+  background: linear-gradient(
+    135deg,
+    rgba(107, 91, 149, 0.25) 0%,
+    rgba(212, 175, 122, 0.12) 100%
+  );
+  border: 0.5px solid rgba(212, 175, 122, 0.28);
 }
