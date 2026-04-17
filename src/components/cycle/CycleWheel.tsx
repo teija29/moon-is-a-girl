@@ -1,12 +1,45 @@
+// Visualisation principale : deux anneaux concentriques.
+// - Anneau intérieur (rose) : cycle menstruel, calculé dynamiquement selon cycleDay / cycleLength.
+// - Anneau extérieur (violet/or) : cycle lunaire — HARDCODÉ pour l'instant,
+//   sera branché à l'API astronomique au Prompt 3.
+
+import { arcParcouruCycle, positionMarqueurCycle } from "@/lib/cycle";
+
 type Props = {
-  cycleDay?: number;
+  cycleDay: number;
+  cycleLength: number;
   lunarPhasePercent?: number;
 };
 
+const CENTRE_X = 125;
+const CENTRE_Y = 125;
+const RAYON_CYCLE = 82; // anneau intérieur (menstruel)
+
 export default function CycleWheel({
-  cycleDay = 14,
+  cycleDay,
+  cycleLength,
   lunarPhasePercent = 82,
 }: Props) {
+  // Arc du cycle menstruel : portion parcourue sur la circonférence totale.
+  const { parcouru, circonference } = arcParcouruCycle(
+    cycleDay,
+    cycleLength,
+    RAYON_CYCLE
+  );
+
+  // Position du marqueur rose sur l'anneau intérieur.
+  const marqueur = positionMarqueurCycle(
+    cycleDay,
+    cycleLength,
+    CENTRE_X,
+    CENTRE_Y,
+    RAYON_CYCLE
+  );
+
+  // Position de l'étiquette "J14", placée au-dessus ou en-dessous du marqueur
+  // selon qu'il est dans la moitié haute ou basse, pour éviter de sortir du viewBox.
+  const etiquetteOffset = marqueur.y < CENTRE_Y ? -16 : 24;
+
   return (
     <svg
       width="250"
@@ -14,7 +47,7 @@ export default function CycleWheel({
       viewBox="0 0 250 250"
       className="animate-drift"
       role="img"
-      aria-label={`Jour ${cycleDay} du cycle, lune à ${lunarPhasePercent}%`}
+      aria-label={`Jour ${cycleDay} d'un cycle de ${cycleLength} jours, lune à ${lunarPhasePercent}%`}
     >
       <defs>
         <radialGradient id="mg-glow" cx="50%" cy="50%">
@@ -38,61 +71,88 @@ export default function CycleWheel({
         </linearGradient>
       </defs>
 
-      <circle cx="125" cy="125" r="115" fill="url(#mg-glow)" />
+      {/* Halo lumineux central */}
+      <circle cx={CENTRE_X} cy={CENTRE_Y} r="115" fill="url(#mg-glow)" />
 
-      <circle cx="125" cy="125" r="110" fill="none" stroke="#1E2347" strokeWidth="1" />
+      {/* Anneau extérieur : cycle lunaire (HARDCODÉ, à brancher au Prompt 3) */}
       <circle
-        cx="125"
-        cy="125"
+        cx={CENTRE_X}
+        cy={CENTRE_Y}
+        r="110"
+        fill="none"
+        stroke="#1E2347"
+        strokeWidth="1"
+      />
+      <circle
+        cx={CENTRE_X}
+        cy={CENTRE_Y}
         r="110"
         fill="none"
         stroke="url(#mg-lunar-ring)"
         strokeWidth="2.5"
         strokeDasharray="245 100"
         opacity="0.85"
-        transform="rotate(-90 125 125)"
+        transform={`rotate(-90 ${CENTRE_X} ${CENTRE_Y})`}
       />
 
-      <circle cx="125" cy="125" r="82" fill="none" stroke="#2A2040" strokeWidth="1" />
+      {/* Anneau intérieur : cycle menstruel (DYNAMIQUE) */}
       <circle
-        cx="125"
-        cy="125"
-        r="82"
+        cx={CENTRE_X}
+        cy={CENTRE_Y}
+        r={RAYON_CYCLE}
+        fill="none"
+        stroke="#2A2040"
+        strokeWidth="1"
+      />
+      <circle
+        cx={CENTRE_X}
+        cy={CENTRE_Y}
+        r={RAYON_CYCLE}
         fill="none"
         stroke="url(#mg-cycle-ring)"
         strokeWidth="3"
-        strokeDasharray="180 340"
+        strokeDasharray={`${parcouru.toFixed(2)} ${circonference.toFixed(2)}`}
         opacity="0.8"
-        transform="rotate(-90 125 125)"
+        transform={`rotate(-90 ${CENTRE_X} ${CENTRE_Y})`}
+        style={{
+          transition: "stroke-dasharray 1200ms cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
       />
 
+      {/* Graduations aux 4 phases principales */}
       <g stroke="#B8A9D9" strokeWidth="0.5" opacity="0.4">
-        <line x1="125" y1="10" x2="125" y2="18" />
-        <line x1="240" y1="125" x2="232" y2="125" />
-        <line x1="125" y1="240" x2="125" y2="232" />
-        <line x1="10" y1="125" x2="18" y2="125" />
+        <line x1={CENTRE_X} y1="10" x2={CENTRE_X} y2="18" />
+        <line x1="240" y1={CENTRE_Y} x2="232" y2={CENTRE_Y} />
+        <line x1={CENTRE_X} y1="240" x2={CENTRE_X} y2="232" />
+        <line x1="10" y1={CENTRE_Y} x2="18" y2={CENTRE_Y} />
       </g>
 
-      <circle cx="125" cy="125" r="42" fill="url(#mg-moon-body)" />
+      {/* Lune au centre (gibbeuse croissante HARDCODÉE, à rendre dynamique au Prompt 3) */}
+      <circle cx={CENTRE_X} cy={CENTRE_Y} r="42" fill="url(#mg-moon-body)" />
       <path
-        d="M 125 83 A 42 42 0 0 0 125 167 A 24 42 0 0 1 125 83 Z"
+        d={`M ${CENTRE_X} 83 A 42 42 0 0 0 ${CENTRE_X} 167 A 24 42 0 0 1 ${CENTRE_X} 83 Z`}
         fill="#0B0D1F"
         opacity="0.55"
       />
       <circle cx="113" cy="115" r="2.5" fill="#B89968" opacity="0.4" />
       <circle cx="132" cy="138" r="1.8" fill="#B89968" opacity="0.3" />
 
+      {/* Marqueur position cycle menstruel (DYNAMIQUE) */}
       <circle
-        cx="207"
-        cy="125"
+        cx={marqueur.x}
+        cy={marqueur.y}
         r="7"
         fill="#C89CA8"
         stroke="#F5EFE6"
         strokeWidth="1.5"
+        style={{
+          transition:
+            "cx 1200ms cubic-bezier(0.4, 0, 0.2, 1), cy 1200ms cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
       />
       <text
-        x="207"
-        y="105"
+        x={marqueur.x}
+        y={marqueur.y + etiquetteOffset}
         fontFamily="var(--font-inter)"
         fontSize="9"
         fontWeight="500"
@@ -103,6 +163,7 @@ export default function CycleWheel({
         J{cycleDay}
       </text>
 
+      {/* Marqueur position lune (HARDCODÉ pour l'instant) */}
       <circle
         cx="220"
         cy="80"
