@@ -26,15 +26,19 @@ export default function JournalEditor({ entreeInitiale }: Props) {
   const [symptomes, setSymptomes] = useState<Symptome[]>(entreeInitiale.symptomes);
   const [pensee, setPensee] = useState(entreeInitiale.pensee);
 
-  const valider = () => {
-    enregistrer({
-      date: entreeInitiale.date,
-      humeur,
-      symptomes,
-      pensee: pensee.trim(),
-      modifieLe: new Date().toISOString(),
-    });
-    router.push("/");
+  const valider = async () => {
+    try {
+      await enregistrer({
+        date: entreeInitiale.date,
+        humeur,
+        symptomes,
+        pensee: pensee.trim(),
+        modifieLe: new Date().toISOString(),
+      });
+      router.push("/");
+    } catch (e) {
+      console.error("Erreur sauvegarde entrée:", e);
+    }
   };
 
   const basculerSymptome = (s: Symptome) => {

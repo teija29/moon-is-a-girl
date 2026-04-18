@@ -1,107 +1,195 @@
-// Couche de persistance du profil utilisatrice.
-// Utilise localStorage pour l'instant. Remplaçable par Supabase plus tard
-// sans modifier le reste du code (mêmes signatures).
+// Couche de persistance via Supabase (remplace localStorage).
+// Toutes les fonctions sont asynchrones et exigent un client Supabase + userId.
+// La RLS protège les accès au niveau Postgres.
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { EntreeJournal } from "@/lib/journal";
+import type {
+  ProfilRow,
+  EntreeJournalRow,
+  PreferencesNotifRow,
+} from "@/lib/supabase/types";
 
 export type ProfilUtilisatrice = {
   prenom: string;
-  /** Date des dernières règles au format ISO "YYYY-MM-DD" (jour local). */
   dernieresRegles: string;
-  /** Durée moyenne du cycle, en jours (21-35). */
   dureeCycle: number;
 };
 
-const CLE_PROFIL = "moon-is-a-girl:profil-v1";
+// ============================================================
+// Profil
+// ============================================================
 
-/**
- * Lit le profil stocké. Renvoie null si absent, invalide, ou côté serveur.
- */
-export function lireProfil(): ProfilUtilisatrice | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const brut = window.localStorage.getItem(CLE_PROFIL);
-    if (!brut) return null;
-    const parsed = JSON.parse(brut) as Partial<ProfilUtilisatrice>;
-    if (
-      typeof parsed.prenom !== "string" ||
-      parsed.prenom.trim().length === 0 ||
-      typeof parsed.dernieresRegles !== "string" ||
-      typeof parsed.dureeCycle !== "number"
-    ) {
-      return null;
-    }
-    return {
-      prenom: parsed.prenom.trim(),
-      dernieresRegles: parsed.dernieresRegles,
-      dureeCycle: parsed.dureeCycle,
-    };
-  } catch {
+function rowVersProfil(row: ProfilRow): ProfilUtilisatrice {
+  return {
+    prenom: row.prenom,
+    dernieresRegles: row.dernieres_regles,
+    dureeCycle: row.duree_cycle,
+  };
+}
+
+export async function lireProfil(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<ProfilUtilisatrice | null> {
+  const { data, error } = await supabase
+    .from("profils")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erreur lecture profil:", error);
     return null;
   }
+  return data ? rowVersProfil(data as ProfilRow) : null;
 }
 
-/**
- * Sauvegarde le profil.
- */
-export function sauvegarderProfil(profil: ProfilUtilisatrice): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(CLE_PROFIL, JSON.stringify(profil));
+export async function sauvegarderProfil(
+  supabase: SupabaseClient,
+  userId: string,
+  profil: ProfilUtilisatrice
+): Promise<void> {
+  const { error } = await supabase.from("profils").upsert(
+    {
+      user_id: userId,
+      prenom: profil.prenom,
+      dernieres_regles: profil.dernieresRegles,
+      duree_cycle: profil.dureeCycle,
+    },
+    { onConflict: "user_id" }
+  );
+  if (error) throw error;
 }
 
-/**
- * Supprime le profil (déconnexion / reset).
- */
-export function effacerProfil(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(CLE_PROFIL);
+export async function effacerProfil(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("profils")
+    .delete()
+    .eq("user_id", userId);
+  if (error) throw error;
 }
 
-// --- Journal ---
+// ============================================================
+// Journal
+// ============================================================
 
-import type { EntreeJournal } from "@/lib/journal";
+function rowVersEntree(row: EntreeJournalRow): EntreeJournal {
+  return {
+    date: row.date,
+    humeur: row.humeur as EntreeJournal["humeur"],
+    symptomes: row.symptomes as EntreeJournal["symptomes"],
+    pensee: row.pensee,
+    modifieLe: row.modifie_le,
+  };
+}
 
-const CLE_JOURNAL = "moon-is-a-girl:journal-v1";
+export async function lireEntreesJournal(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Record<string, EntreeJournal>> {
+  const { data, error } = await supabase
+    .from("entrees_journal")
+    .select("*")
+    .eq("user_id", userId);
 
-/**
- * Lit toutes les entrées du journal, indexées par date ISO.
- * Renvoie un objet vide si aucune entrée n'est stockée.
- */
-export function lireEntreesJournal(): Record<string, EntreeJournal> {
-  if (typeof window === "undefined") return {};
-  try {
-    const brut = window.localStorage.getItem(CLE_JOURNAL);
-    if (!brut) return {};
-    const parsed = JSON.parse(brut);
-    if (typeof parsed !== "object" || parsed === null) return {};
-    return parsed as Record<string, EntreeJournal>;
-  } catch {
+  if (error) {
+    console.error("Erreur lecture journal:", error);
     return {};
   }
+
+  const map: Record<string, EntreeJournal> = {};
+  for (const row of (data ?? []) as EntreeJournalRow[]) {
+    map[row.date] = rowVersEntree(row);
+  }
+  return map;
 }
 
-/**
- * Lit une entrée précise (null si absente).
- */
-export function lireEntreeJournal(dateISO: string): EntreeJournal | null {
-  return lireEntreesJournal()[dateISO] ?? null;
+export async function lireEntreeJournal(
+  supabase: SupabaseClient,
+  userId: string,
+  dateISO: string
+): Promise<EntreeJournal | null> {
+  const { data, error } = await supabase
+    .from("entrees_journal")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("date", dateISO)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erreur lecture entrée:", error);
+    return null;
+  }
+  return data ? rowVersEntree(data as EntreeJournalRow) : null;
 }
 
-/**
- * Écrit une entrée (crée ou écrase selon la date).
- */
-export function sauvegarderEntreeJournal(entree: EntreeJournal): void {
-  if (typeof window === "undefined") return;
-  const tout = lireEntreesJournal();
-  tout[entree.date] = { ...entree, modifieLe: new Date().toISOString() };
-  window.localStorage.setItem(CLE_JOURNAL, JSON.stringify(tout));
+export async function sauvegarderEntreeJournal(
+  supabase: SupabaseClient,
+  userId: string,
+  entree: EntreeJournal
+): Promise<void> {
+  const { error } = await supabase.from("entrees_journal").upsert(
+    {
+      user_id: userId,
+      date: entree.date,
+      humeur: entree.humeur,
+      symptomes: entree.symptomes,
+      pensee: entree.pensee,
+      modifie_le: new Date().toISOString(),
+    },
+    { onConflict: "user_id,date" }
+  );
+  if (error) throw error;
 }
 
-/**
- * Supprime une entrée (no-op si absente).
- */
-export function supprimerEntreeJournal(dateISO: string): void {
-  if (typeof window === "undefined") return;
-  const tout = lireEntreesJournal();
-  if (!(dateISO in tout)) return;
-  delete tout[dateISO];
-  window.localStorage.setItem(CLE_JOURNAL, JSON.stringify(tout));
+export async function supprimerEntreeJournal(
+  supabase: SupabaseClient,
+  userId: string,
+  dateISO: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("entrees_journal")
+    .delete()
+    .eq("user_id", userId)
+    .eq("date", dateISO);
+  if (error) throw error;
+}
+
+// ============================================================
+// Préférences notifications (utilisé au Prompt 6)
+// ============================================================
+
+export type PreferencesNotif = {
+  actif: boolean;
+  heureRituelSoir: number;
+  notifPleineLune: boolean;
+  notifReglesProches: boolean;
+};
+
+export async function lirePreferencesNotif(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<PreferencesNotif | null> {
+  const { data, error } = await supabase
+    .from("preferences_notif")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erreur lecture préférences notif:", error);
+    return null;
+  }
+  if (!data) return null;
+  const row = data as PreferencesNotifRow;
+  return {
+    actif: row.actif,
+    heureRituelSoir: row.heure_rituel_soir,
+    notifPleineLune: row.notif_pleine_lune,
+    notifReglesProches: row.notif_regles_proches,
+  };
 }

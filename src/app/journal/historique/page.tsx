@@ -11,14 +11,19 @@ import JournalEntryCard from "@/components/journal/JournalEntryCard";
 
 export default function JournalHistoriquePage() {
   const router = useRouter();
-  const { chargement: chargementProfil, profil } = useUserProfile();
+  const { chargement: chargementProfil, profil, utilisateur } = useUserProfile();
   const { chargement: chargementJournal, entrees } = useJournal();
 
   useEffect(() => {
-    if (!chargementProfil && !profil) {
+    if (chargementProfil || chargementJournal) return;
+    if (!utilisateur) {
+      router.replace("/login");
+      return;
+    }
+    if (!profil) {
       router.replace("/onboarding");
     }
-  }, [chargementProfil, profil, router]);
+  }, [chargementProfil, chargementJournal, utilisateur, profil, router]);
 
   // Tri décroissant par date (plus récent en haut).
   const entreesTriees = useMemo(() => {
@@ -27,7 +32,7 @@ export default function JournalHistoriquePage() {
     );
   }, [entrees]);
 
-  if (chargementProfil || chargementJournal || !profil) {
+  if (chargementProfil || chargementJournal || !utilisateur || !profil) {
     return (
       <main className="relative min-h-screen overflow-hidden">
         <StarField />

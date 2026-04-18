@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import StarField from "@/components/layout/StarField";
@@ -21,12 +21,18 @@ function aujourdhuiISO(): string {
 
 export default function OnboardingFlow() {
   const router = useRouter();
-  const { enregistrer } = useUserProfile();
+  const { chargement, utilisateur, enregistrer } = useUserProfile();
 
   const [etape, setEtape] = useState<Etape>(1);
   const [prenom, setPrenom] = useState("");
   const [dernieresRegles, setDernieresRegles] = useState("");
   const [dureeCycle, setDureeCycle] = useState(28);
+
+  useEffect(() => {
+    if (!chargement && !utilisateur) {
+      router.replace("/login");
+    }
+  }, [chargement, utilisateur, router]);
 
   const prenomValide = prenom.trim().length >= 2;
   const dateValide = dernieresRegles.length > 0;
@@ -41,14 +47,22 @@ export default function OnboardingFlow() {
     else if (etape === 3) setEtape(2);
   };
 
-  const terminer = () => {
+  const terminer = async () => {
     if (!prenomValide || !dateValide) return;
-    enregistrer({
-      prenom: prenom.trim(),
-      dernieresRegles,
-      dureeCycle,
-    });
-    router.push("/");
+    if (!utilisateur) {
+      router.push("/login");
+      return;
+    }
+    try {
+      await enregistrer({
+        prenom: prenom.trim(),
+        dernieresRegles,
+        dureeCycle,
+      });
+      router.push("/");
+    } catch (e) {
+      console.error("Erreur sauvegarde profil:", e);
+    }
   };
 
   return (

@@ -13,20 +13,26 @@ import BottomNav from "@/components/layout/BottomNav";
 import CycleWheel from "@/components/cycle/CycleWheel";
 import CyclesInfoCard from "@/components/cycle/CyclesInfoCard";
 import JournalCTA from "@/components/journal/JournalCTA";
+import MigrationRunner from "@/components/auth/MigrationRunner";
 
 export default function HomePage() {
   const router = useRouter();
-  const { chargement: chargementProfil, profil } = useUserProfile();
+  const { chargement: chargementProfil, profil, utilisateur } = useUserProfile();
   const { chargement: chargementJournal, entreeDuJour, aEcritAujourdhui } =
     useJournal();
 
   useEffect(() => {
-    if (!chargementProfil && !profil) {
+    if (chargementProfil || chargementJournal) return;
+    if (!utilisateur) {
+      router.replace("/login");
+      return;
+    }
+    if (!profil) {
       router.replace("/onboarding");
     }
-  }, [chargementProfil, profil, router]);
+  }, [chargementProfil, chargementJournal, utilisateur, profil, router]);
 
-  if (chargementProfil || chargementJournal || !profil) {
+  if (chargementProfil || chargementJournal || !utilisateur || !profil) {
     return (
       <main className="relative min-h-screen overflow-hidden">
         <StarField />
@@ -43,6 +49,7 @@ export default function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden pb-28">
       <StarField />
+      <MigrationRunner />
       <div className="relative z-10">
         <MoonWordmark />
         <div className="px-6">
