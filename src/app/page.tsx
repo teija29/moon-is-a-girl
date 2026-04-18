@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useJournal } from "@/hooks/useJournal";
 import { calculerJourDuCycle, phaseDuCycle } from "@/lib/cycle";
 import { getEtatLune } from "@/lib/lune";
 import StarField from "@/components/layout/StarField";
@@ -15,15 +16,17 @@ import JournalCTA from "@/components/journal/JournalCTA";
 
 export default function HomePage() {
   const router = useRouter();
-  const { chargement, profil } = useUserProfile();
+  const { chargement: chargementProfil, profil } = useUserProfile();
+  const { chargement: chargementJournal, entreeDuJour, aEcritAujourdhui } =
+    useJournal();
 
   useEffect(() => {
-    if (!chargement && !profil) {
+    if (!chargementProfil && !profil) {
       router.replace("/onboarding");
     }
-  }, [chargement, profil, router]);
+  }, [chargementProfil, profil, router]);
 
-  if (chargement || !profil) {
+  if (chargementProfil || chargementJournal || !profil) {
     return (
       <main className="relative min-h-screen overflow-hidden">
         <StarField />
@@ -32,21 +35,16 @@ export default function HomePage() {
     );
   }
 
-  // Cycle menstruel (données utilisatrice)
   const dateRegles = new Date(profil.dernieresRegles);
   const jourCycle = calculerJourDuCycle(dateRegles, profil.dureeCycle);
   const phase = phaseDuCycle(jourCycle, profil.dureeCycle);
-
-  // Cycle lunaire (calcul astronomique en temps réel)
   const lune = getEtatLune();
 
   return (
     <main className="relative min-h-screen overflow-hidden pb-28">
       <StarField />
-
       <div className="relative z-10">
         <MoonWordmark />
-
         <div className="px-6">
           <GreetingHeader prenom={profil.prenom} />
 
@@ -66,11 +64,13 @@ export default function HomePage() {
             joursJusquaPleineLune={lune.joursJusquaPleineLune}
           />
 
-          <JournalCTA />
+          <JournalCTA
+            dejaEcrit={aEcritAujourdhui}
+            apercuPensee={entreeDuJour.pensee}
+          />
         </div>
       </div>
-
-      <BottomNav />
+      <BottomNav activeTab="lune" />
     </main>
   );
 }

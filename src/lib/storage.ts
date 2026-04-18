@@ -54,3 +54,54 @@ export function effacerProfil(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(CLE_PROFIL);
 }
+
+// --- Journal ---
+
+import type { EntreeJournal } from "@/lib/journal";
+
+const CLE_JOURNAL = "moon-is-a-girl:journal-v1";
+
+/**
+ * Lit toutes les entrées du journal, indexées par date ISO.
+ * Renvoie un objet vide si aucune entrée n'est stockée.
+ */
+export function lireEntreesJournal(): Record<string, EntreeJournal> {
+  if (typeof window === "undefined") return {};
+  try {
+    const brut = window.localStorage.getItem(CLE_JOURNAL);
+    if (!brut) return {};
+    const parsed = JSON.parse(brut);
+    if (typeof parsed !== "object" || parsed === null) return {};
+    return parsed as Record<string, EntreeJournal>;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Lit une entrée précise (null si absente).
+ */
+export function lireEntreeJournal(dateISO: string): EntreeJournal | null {
+  return lireEntreesJournal()[dateISO] ?? null;
+}
+
+/**
+ * Écrit une entrée (crée ou écrase selon la date).
+ */
+export function sauvegarderEntreeJournal(entree: EntreeJournal): void {
+  if (typeof window === "undefined") return;
+  const tout = lireEntreesJournal();
+  tout[entree.date] = { ...entree, modifieLe: new Date().toISOString() };
+  window.localStorage.setItem(CLE_JOURNAL, JSON.stringify(tout));
+}
+
+/**
+ * Supprime une entrée (no-op si absente).
+ */
+export function supprimerEntreeJournal(dateISO: string): void {
+  if (typeof window === "undefined") return;
+  const tout = lireEntreesJournal();
+  if (!(dateISO in tout)) return;
+  delete tout[dateISO];
+  window.localStorage.setItem(CLE_JOURNAL, JSON.stringify(tout));
+}
