@@ -1,44 +1,48 @@
-// Visualisation principale : deux anneaux concentriques.
-// - Anneau intérieur (rose) : cycle menstruel, calculé dynamiquement selon cycleDay / cycleLength.
-// - Anneau extérieur (violet/or) : cycle lunaire — HARDCODÉ pour l'instant,
-//   sera branché à l'API astronomique au Prompt 3.
-
 import { arcParcouruCycle, positionMarqueurCycle } from "@/lib/cycle";
+import { arcParcouruLune, positionMarqueurLune } from "@/lib/lune";
+import MoonShape from "@/components/cycle/MoonShape";
 
 type Props = {
   cycleDay: number;
   cycleLength: number;
-  lunarPhasePercent?: number;
+  /** Phase lunaire : 0 (nouvelle) à 1 (nouvelle suivante). */
+  lunePhase: number;
 };
 
 const CENTRE_X = 125;
 const CENTRE_Y = 125;
 const RAYON_CYCLE = 82; // anneau intérieur (menstruel)
+const RAYON_LUNE = 110; // anneau extérieur (lunaire)
+const RAYON_DISQUE_LUNE = 42; // disque central représentant la lune
 
 export default function CycleWheel({
   cycleDay,
   cycleLength,
-  lunarPhasePercent = 82,
+  lunePhase,
 }: Props) {
-  // Arc du cycle menstruel : portion parcourue sur la circonférence totale.
-  const { parcouru, circonference } = arcParcouruCycle(
-    cycleDay,
-    cycleLength,
-    RAYON_CYCLE
-  );
-
-  // Position du marqueur rose sur l'anneau intérieur.
-  const marqueur = positionMarqueurCycle(
+  // ---- Cycle menstruel (anneau intérieur) ----
+  const { parcouru: parcouruCycle, circonference: circCycle } =
+    arcParcouruCycle(cycleDay, cycleLength, RAYON_CYCLE);
+  const marqueurCycle = positionMarqueurCycle(
     cycleDay,
     cycleLength,
     CENTRE_X,
     CENTRE_Y,
     RAYON_CYCLE
   );
+  const etiquetteOffsetCycle = marqueurCycle.y < CENTRE_Y ? -16 : 24;
 
-  // Position de l'étiquette "J14", placée au-dessus ou en-dessous du marqueur
-  // selon qu'il est dans la moitié haute ou basse, pour éviter de sortir du viewBox.
-  const etiquetteOffset = marqueur.y < CENTRE_Y ? -16 : 24;
+  // ---- Cycle lunaire (anneau extérieur) ----
+  const { parcouru: parcouruLune, circonference: circLune } = arcParcouruLune(
+    lunePhase,
+    RAYON_LUNE
+  );
+  const marqueurLune = positionMarqueurLune(
+    lunePhase,
+    CENTRE_X,
+    CENTRE_Y,
+    RAYON_LUNE
+  );
 
   return (
     <svg
@@ -47,18 +51,15 @@ export default function CycleWheel({
       viewBox="0 0 250 250"
       className="animate-drift"
       role="img"
-      aria-label={`Jour ${cycleDay} d'un cycle de ${cycleLength} jours, lune à ${lunarPhasePercent}%`}
+      aria-label={`Jour ${cycleDay} d'un cycle de ${cycleLength} jours, lune à ${Math.round(
+        lunePhase * 100
+      )}% du cycle synodique`}
     >
       <defs>
         <radialGradient id="mg-glow" cx="50%" cy="50%">
           <stop offset="0%" stopColor="#F5EFE6" stopOpacity="0.35" />
           <stop offset="60%" stopColor="#D4AF7A" stopOpacity="0.08" />
           <stop offset="100%" stopColor="#F5EFE6" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="mg-moon-body" cx="35%" cy="35%">
-          <stop offset="0%" stopColor="#F5EFE6" />
-          <stop offset="60%" stopColor="#E8D5A8" />
-          <stop offset="100%" stopColor="#B89968" />
         </radialGradient>
         <linearGradient id="mg-lunar-ring" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#3D3A6B" />
@@ -74,11 +75,11 @@ export default function CycleWheel({
       {/* Halo lumineux central */}
       <circle cx={CENTRE_X} cy={CENTRE_Y} r="115" fill="url(#mg-glow)" />
 
-      {/* Anneau extérieur : cycle lunaire (HARDCODÉ, à brancher au Prompt 3) */}
+      {/* Anneau extérieur : cycle lunaire (DYNAMIQUE) */}
       <circle
         cx={CENTRE_X}
         cy={CENTRE_Y}
-        r="110"
+        r={RAYON_LUNE}
         fill="none"
         stroke="#1E2347"
         strokeWidth="1"
@@ -86,13 +87,16 @@ export default function CycleWheel({
       <circle
         cx={CENTRE_X}
         cy={CENTRE_Y}
-        r="110"
+        r={RAYON_LUNE}
         fill="none"
         stroke="url(#mg-lunar-ring)"
         strokeWidth="2.5"
-        strokeDasharray="245 100"
+        strokeDasharray={`${parcouruLune.toFixed(2)} ${circLune.toFixed(2)}`}
         opacity="0.85"
         transform={`rotate(-90 ${CENTRE_X} ${CENTRE_Y})`}
+        style={{
+          transition: "stroke-dasharray 1200ms cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
       />
 
       {/* Anneau intérieur : cycle menstruel (DYNAMIQUE) */}
@@ -111,7 +115,7 @@ export default function CycleWheel({
         fill="none"
         stroke="url(#mg-cycle-ring)"
         strokeWidth="3"
-        strokeDasharray={`${parcouru.toFixed(2)} ${circonference.toFixed(2)}`}
+        strokeDasharray={`${parcouruCycle.toFixed(2)} ${circCycle.toFixed(2)}`}
         opacity="0.8"
         transform={`rotate(-90 ${CENTRE_X} ${CENTRE_Y})`}
         style={{
@@ -127,20 +131,18 @@ export default function CycleWheel({
         <line x1="10" y1={CENTRE_Y} x2="18" y2={CENTRE_Y} />
       </g>
 
-      {/* Lune au centre (gibbeuse croissante HARDCODÉE, à rendre dynamique au Prompt 3) */}
-      <circle cx={CENTRE_X} cy={CENTRE_Y} r="42" fill="url(#mg-moon-body)" />
-      <path
-        d={`M ${CENTRE_X} 83 A 42 42 0 0 0 ${CENTRE_X} 167 A 24 42 0 0 1 ${CENTRE_X} 83 Z`}
-        fill="#0B0D1F"
-        opacity="0.55"
+      {/* Lune au centre, forme réelle selon la phase */}
+      <MoonShape
+        phase={lunePhase}
+        cx={CENTRE_X}
+        cy={CENTRE_Y}
+        r={RAYON_DISQUE_LUNE}
       />
-      <circle cx="113" cy="115" r="2.5" fill="#B89968" opacity="0.4" />
-      <circle cx="132" cy="138" r="1.8" fill="#B89968" opacity="0.3" />
 
-      {/* Marqueur position cycle menstruel (DYNAMIQUE) */}
+      {/* Marqueur cycle menstruel (rose) */}
       <circle
-        cx={marqueur.x}
-        cy={marqueur.y}
+        cx={marqueurCycle.x}
+        cy={marqueurCycle.y}
         r="7"
         fill="#C89CA8"
         stroke="#F5EFE6"
@@ -151,8 +153,8 @@ export default function CycleWheel({
         }}
       />
       <text
-        x={marqueur.x}
-        y={marqueur.y + etiquetteOffset}
+        x={marqueurCycle.x}
+        y={marqueurCycle.y + etiquetteOffsetCycle}
         fontFamily="var(--font-inter)"
         fontSize="9"
         fontWeight="500"
@@ -163,14 +165,18 @@ export default function CycleWheel({
         J{cycleDay}
       </text>
 
-      {/* Marqueur position lune (HARDCODÉ pour l'instant) */}
+      {/* Marqueur cycle lunaire (or, DYNAMIQUE) */}
       <circle
-        cx="220"
-        cy="80"
+        cx={marqueurLune.x}
+        cy={marqueurLune.y}
         r="6"
         fill="#D4AF7A"
         stroke="#F5EFE6"
         strokeWidth="1.5"
+        style={{
+          transition:
+            "cx 1200ms cubic-bezier(0.4, 0, 0.2, 1), cy 1200ms cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
       />
     </svg>
   );
