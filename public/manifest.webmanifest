@@ -1,0 +1,41 @@
+{
+  "name": "Moon is a Girl",
+  "short_name": "Moon",
+  "description": "Suis ton cycle menstruel en lien avec le cycle lunaire. Une app poétique et naturelle pour réécouter tes rythmes intérieurs.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0D1F",
+  "theme_color": "#0B0D1F",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["health", "lifestyle", "wellness"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
