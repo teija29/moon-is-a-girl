@@ -53,6 +53,7 @@ function deduireActiveTab(pathname: string): TabId {
   if (pathname === "/") return "lune";
   if (pathname === "/journal") return "journal";
   if (pathname.startsWith("/journal")) return "historique";
+  if (pathname.startsWith("/moi")) return "moi";
   return "lune";
 }
 
@@ -101,9 +102,7 @@ export default function BottomNav({ activeTab }: Props) {
       <NavItem
         label="MOI"
         active={courant === "moi"}
-        onClick={() => {
-          /* route à venir au Prompt 6 */
-        }}
+        onClick={() => router.push("/moi")}
       >
         <circle cx="12" cy="8" r="4" />
         <path d="M4 21 C 4 16, 8 14, 12 14 C 16 14, 20 16, 20 21" />
