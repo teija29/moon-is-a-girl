@@ -9,6 +9,7 @@ import type {
   EntreeJournalRow,
   PreferencesNotifRow,
 } from "@/lib/supabase/types";
+// PushSubscriptionRow est importé plus bas pour maintenir la séparation de sections.
 
 export type ProfilUtilisatrice = {
   prenom: string;
@@ -192,4 +193,98 @@ export async function lirePreferencesNotif(
     notifPleineLune: row.notif_pleine_lune,
     notifReglesProches: row.notif_regles_proches,
   };
+}
+
+// ============================================================
+// Push subscriptions & préférences complètes (Prompt 8)
+// ============================================================
+
+export type PreferencesNotifComplete = {
+  actif: boolean;
+  heureRituelSoir: number;
+  notifRituelSoir: boolean;
+  notifPleineLune: boolean;
+  notifReglesProches: boolean;
+  notifOvulation: boolean;
+  fuseauHoraire: string;
+};
+
+export async function lirePreferencesNotifCompletes(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<PreferencesNotifComplete | null> {
+  const { data, error } = await supabase
+    .from("preferences_notif")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erreur lecture préférences complètes:", error);
+    return null;
+  }
+  if (!data) return null;
+
+  const row = data as PreferencesNotifRow;
+  return {
+    actif: row.actif,
+    heureRituelSoir: row.heure_rituel_soir,
+    notifRituelSoir: row.notif_rituel_soir,
+    notifPleineLune: row.notif_pleine_lune,
+    notifReglesProches: row.notif_regles_proches,
+    notifOvulation: row.notif_ovulation,
+    fuseauHoraire: row.fuseau_horaire,
+  };
+}
+
+export async function sauvegarderPreferencesNotif(
+  supabase: SupabaseClient,
+  userId: string,
+  prefs: PreferencesNotifComplete
+): Promise<void> {
+  const { error } = await supabase.from("preferences_notif").upsert(
+    {
+      user_id: userId,
+      actif: prefs.actif,
+      heure_rituel_soir: prefs.heureRituelSoir,
+      notif_rituel_soir: prefs.notifRituelSoir,
+      notif_pleine_lune: prefs.notifPleineLune,
+      notif_regles_proches: prefs.notifReglesProches,
+      notif_ovulation: prefs.notifOvulation,
+      fuseau_horaire: prefs.fuseauHoraire,
+    },
+    { onConflict: "user_id" }
+  );
+  if (error) throw error;
+}
+
+export async function enregistrerPushSubscription(
+  supabase: SupabaseClient,
+  userId: string,
+  abo: { endpoint: string; p256dh: string; auth: string; userAgent?: string }
+): Promise<void> {
+  const { error } = await supabase.from("push_subscriptions").upsert(
+    {
+      user_id: userId,
+      endpoint: abo.endpoint,
+      p256dh: abo.p256dh,
+      auth: abo.auth,
+      user_agent: abo.userAgent ?? null,
+    },
+    { onConflict: "user_id,endpoint" }
+  );
+  if (error) throw error;
+}
+
+export async function supprimerPushSubscription(
+  supabase: SupabaseClient,
+  userId: string,
+  endpoint: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("user_id", userId)
+    .eq("endpoint", endpoint);
+  if (error) throw error;
 }

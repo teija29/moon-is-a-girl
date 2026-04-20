@@ -2,7 +2,7 @@
 // Rôle actuel : fonctionnement hors-ligne basique (cache des pages visitées).
 // Rôle futur (Prompt 8) : réception de notifications push + affichage.
 
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE_PAGES = `moon-pages-${VERSION}`;
 const CACHE_ASSETS = `moon-assets-${VERSION}`;
 
@@ -90,4 +90,60 @@ self.addEventListener("fetch", (event) => {
       )
     );
   }
+});
+
+// ============================================================
+// Web Push — réception et affichage des notifications
+// ============================================================
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { titre: "Moon is a Girl", corps: event.data.text() };
+  }
+
+  const titre = payload.titre || "Moon is a Girl";
+  const options = {
+    body: payload.corps || "",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    lang: "fr",
+    tag: payload.type || "default",
+    renotify: Boolean(payload.type),
+    data: {
+      url: payload.url || "/",
+      type: payload.type || null,
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(titre, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const urlCible = (event.notification.data && event.notification.data.url) || "/";
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if ("focus" in client) {
+            client.focus();
+            if ("navigate" in client) {
+              return client.navigate(urlCible);
+            }
+            return;
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(urlCible);
+        }
+      })
+  );
 });

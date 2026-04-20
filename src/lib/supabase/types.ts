@@ -22,5 +22,22 @@ export type PreferencesNotifRow = {
   heure_rituel_soir: number;
   notif_pleine_lune: boolean;
   notif_regles_proches: boolean;
+  notif_rituel_soir: boolean;
+  notif_ovulation: boolean;
+  fuseau_horaire: string;
+  derniere_notif_rituel: string | null;
+  derniere_notif_lune: string | null;
+  derniere_notif_regles: string | null;
+  derniere_notif_ovulation: string | null;
   updated_at: string;
+};
+
+export type PushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
 };

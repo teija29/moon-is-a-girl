@@ -87,6 +87,26 @@ export default function MoiPage() {
             Préférences
           </p>
           <div className="space-y-2.5">
+            <CarteAction
+              href="/moi/notifications"
+              titre="Notifications"
+              description="Rappels doux, à ton rythme"
+              icone={
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M6 8 A 6 6 0 0 1 18 8 V 13 L 20 16 H 4 L 6 13 Z" />
+                  <path d="M10 20 A 2 2 0 0 0 14 20" />
+                </svg>
+              }
+            />
             <SelecteurLangue />
           </div>
 
