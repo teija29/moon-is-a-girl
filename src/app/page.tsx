@@ -8,6 +8,7 @@ import { calculerJourDuCycle, phaseDuCycle } from "@/lib/cycle";
 import { getEtatLune } from "@/lib/lune";
 import StarField from "@/components/layout/StarField";
 import MoonWordmark from "@/components/layout/MoonWordmark";
+import EcranChargement from "@/components/layout/EcranChargement";
 import GreetingHeader from "@/components/layout/GreetingHeader";
 import BottomNav from "@/components/layout/BottomNav";
 import CycleWheel from "@/components/cycle/CycleWheel";
@@ -33,12 +34,7 @@ export default function HomePage() {
   }, [chargementProfil, chargementJournal, utilisateur, profil, router]);
 
   if (chargementProfil || chargementJournal || !utilisateur || !profil) {
-    return (
-      <main className="relative min-h-screen overflow-hidden">
-        <StarField />
-        <MoonWordmark />
-      </main>
-    );
+    return <EcranChargement />;
   }
 
   const dateRegles = new Date(profil.dernieresRegles);

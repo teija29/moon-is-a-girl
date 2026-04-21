@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import StarField from "@/components/layout/StarField";
 import MoonWordmark from "@/components/layout/MoonWordmark";
+import EcranChargement from "@/components/layout/EcranChargement";
 
 const MOT_CONFIRMATION = "SUPPRIMER";
 
@@ -24,12 +25,7 @@ export default function SupprimerComptePage() {
   }, [chargement, utilisateur, router]);
 
   if (chargement || !utilisateur) {
-    return (
-      <main className="relative min-h-screen overflow-hidden">
-        <StarField />
-        <MoonWordmark />
-      </main>
-    );
+    return <EcranChargement />;
   }
 
   const peutSupprimer = motTape === MOT_CONFIRMATION && !suppression;

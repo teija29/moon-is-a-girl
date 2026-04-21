@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import StarField from "@/components/layout/StarField";
 import MoonWordmark from "@/components/layout/MoonWordmark";
+import EcranChargement from "@/components/layout/EcranChargement";
 import ChampTexte from "@/components/moi/ChampTexte";
 import ChampDate from "@/components/moi/ChampDate";
 import ChampDureeCycle from "@/components/moi/ChampDureeCycle";
@@ -46,12 +47,7 @@ export default function ModifierProfilPage() {
   }, [chargement, utilisateur, profil, router]);
 
   if (chargement || !utilisateur || !profil) {
-    return (
-      <main className="relative min-h-screen overflow-hidden">
-        <StarField />
-        <MoonWordmark />
-      </main>
-    );
+    return <EcranChargement />;
   }
 
   const prenomValide = prenom.trim().length >= 2;

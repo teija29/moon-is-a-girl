@@ -6,6 +6,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useJournal } from "@/hooks/useJournal";
 import StarField from "@/components/layout/StarField";
 import MoonWordmark from "@/components/layout/MoonWordmark";
+import EcranChargement from "@/components/layout/EcranChargement";
 import BottomNav from "@/components/layout/BottomNav";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
 
@@ -33,12 +34,7 @@ export default function JournalHistoriquePage() {
   }, [entrees]);
 
   if (chargementProfil || chargementJournal || !utilisateur || !profil) {
-    return (
-      <main className="relative min-h-screen overflow-hidden">
-        <StarField />
-        <MoonWordmark />
-      </main>
-    );
+    return <EcranChargement />;
   }
 
   return (

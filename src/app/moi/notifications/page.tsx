@@ -18,6 +18,7 @@ import {
 } from "@/lib/push/client";
 import StarField from "@/components/layout/StarField";
 import MoonWordmark from "@/components/layout/MoonWordmark";
+import EcranChargement from "@/components/layout/EcranChargement";
 
 const PREFS_DEFAUT: PreferencesNotifComplete = {
   actif: false,
@@ -61,12 +62,7 @@ export default function NotificationsPage() {
   }, [chargement, utilisateur, router, supabase]);
 
   if (chargement || chargementPrefs || !utilisateur) {
-    return (
-      <main className="relative min-h-screen overflow-hidden">
-        <StarField />
-        <MoonWordmark />
-      </main>
-    );
+    return <EcranChargement />;
   }
 
   const activer = async () => {

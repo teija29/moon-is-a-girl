@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import StarField from "@/components/layout/StarField";
 import MoonWordmark from "@/components/layout/MoonWordmark";
+import EcranChargement from "@/components/layout/EcranChargement";
 import BottomNav from "@/components/layout/BottomNav";
 import CarteProfil from "@/components/moi/CarteProfil";
 import CarteAction from "@/components/moi/CarteAction";
@@ -27,12 +28,7 @@ export default function MoiPage() {
   }, [chargement, utilisateur, profil, router]);
 
   if (chargement || !utilisateur || !profil) {
-    return (
-      <main className="relative min-h-screen overflow-hidden">
-        <StarField />
-        <MoonWordmark />
-      </main>
-    );
+    return <EcranChargement />;
   }
 
   const confirmerDeconnexion = async () => {
